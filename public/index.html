@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Token Security Experiment</title>
+    <style>
+        :root {
+            --bg: #f7fbff;
+            --card: #ffffff;
+            --accent: #2b79ff;
+            --accent-2: #00b894;
+            --muted: #666;
+            --danger: #ff4757;
+            --warning: #ffa502;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 24px;
+            background: var(--bg);
+            color: #222;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--accent);
+            font-size: 28px;
+        }
+
+        p.desc {
+            margin: 6px 0 18px 0;
+            color: var(--muted);
+        }
+
+        .card {
+            background: var(--card);
+            padding: 18px;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(50, 50, 93, 0.07);
+            margin-bottom: 18px;
+        }
+
+        .card-danger {
+            border: 2px solid var(--danger);
+            background: #fff5f5;
+        }
+
+        .section-title {
+            color: var(--accent-2);
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+
+        .section-title-danger {
+            color: var(--danger);
+        }
+
+        label {
+            display: block;
+            margin: 6px 0 4px 0;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type=text],
+        input[type=password] {
+            padding: 10px;
+            width: 100%;
+            max-width: 380px;
+            border-radius: 6px;
+            border: 1px solid #e6eef8;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 0;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-sec {
+            background: #eef7ff;
+            color: var(--accent);
+            border: 1px solid rgba(43, 121, 255, 0.12);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--accent-2);
+            border: 1px dashed #dff6ea;
+        }
+
+        .outputs {
+            margin-top: 12px;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .small {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        footer {
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        pre {
+            background: #f6f9ff;
+            padding: 10px;
+            border-radius: 6px;
+            overflow: auto;
+            max-width: 100%;
+            font-size: 12px;
+        }
+
+        .warning-box {
+            background: #fff9e6;
+            border-left: 4px solid var(--warning);
+            padding: 12px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+
+        .attack-result {
+            background: #ffe6e6;
+            border: 2px solid var(--danger);
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            font-weight: bold;
+            color: var(--danger);
+        }
+
+        .success-result {
+            background: #e6ffe6;
+            border: 2px solid var(--accent-2);
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            font-weight: bold;
+            color: var(--accent-2);
+        }
+
+        .step {
+            background: #f8f9fa;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .step-number {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            margin-right: 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 Token Security Experiment</h1>
+        </header>
+        <p class="desc">This experiment demonstrates <strong>XSS-based token theft</strong> and why <strong>HttpOnly
+                cookies</strong> provide better security than client-side storage (localStorage/sessionStorage).</p>
+
+        <!-- STEP 1: Setup -->
+        <div class="card">
+            <div class="section-title">Step 1: Setup Authentication</div>
+            <p class="small">First, we'll set up two different authentication methods to compare their security.</p>
+
+            <label for="username">Username</label>
+            <input id="username" type="text" placeholder="any name (demo)" value="testuser">
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="any password (demo)" value="password123">
+
+            <div class="row" style="margin-top:12px;">
+                <button class="btn-primary" id="btnLoginInsecure">Login (Insecure - JSON Token)</button>
+                <button class="btn-sec" id="btnLoginSecure">Login (Secure - HttpOnly Cookie)</button>
+            </div>
+            <div class="outputs small" id="loginOutput"></div>
+            <div class="hint">
+                <strong>Insecure:</strong> Returns a token that must be stored by the client (typically in
+                localStorage).<br>
+                <strong>Secure:</strong> Sets an HttpOnly cookie that JavaScript cannot access.
+            </div>
+        </div>
+
+        <!-- STEP 2: Store Tokens -->
+        <div class="card">
+            <div class="section-title">Step 2: Store Authentication Tokens</div>
+            <p class="small">After login, store the token in localStorage (common but insecure practice).</p>
+
+            <div class="row">
+                <button class="btn-primary" id="btnStoreLocal">Store Token in localStorage</button>
+                <button class="btn-sec" id="btnGetLocal">View localStorage Token</button>
+            </div>
+            <div class="outputs small" id="localOutput"></div>
+
+            <div class="hint" style="margin-top: 16px;">
+                <strong>Note:</strong> The HttpOnly cookie is already stored by the browser automatically and cannot be
+                accessed via JavaScript. Check DevTools → Application → Cookies to see it.
+            </div>
+        </div>
+
+        <!-- STEP 3: THE ATTACK -->
+        <div class="card card-danger">
+            <div class="section-title section-title-danger">⚠️ Step 3: XSS Attack Simulation</div>
+            <p class="small">Now we'll simulate a Cross-Site Scripting (XSS) attack that attempts to steal the
+                authentication token.</p>
+
+            <div class="warning-box">
+                <strong>⚠️ Educational Purpose Only:</strong> This demonstrates a real vulnerability. Never perform
+                such attacks on systems you don't own.
+            </div>
+
+            <div class="step">
+                <span class="step-number">A</span>
+                <strong>Attack localStorage Token</strong>
+                <p class="small" style="margin: 8px 0 8px 32px;">Click the button below to inject malicious JavaScript
+                    that attempts to steal the token from localStorage.</p>
+                <button class="btn-danger" id="btnAttackLocalStorage" style="margin-left: 32px;">Execute XSS Attack on
+                    localStorage</button>
+                <div id="attackLocalOutput" style="margin-left: 32px;"></div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">B</span>
+                <strong>Attack HttpOnly Cookie</strong>
+                <p class="small" style="margin: 8px 0 8px 32px;">Now try to steal the HttpOnly cookie using the same
+                    technique.</p>
+                <button class="btn-danger" id="btnAttackCookie" style="margin-left: 32px;">Execute XSS Attack on
+                    HttpOnly Cookie</button>
+                <div id="attackCookieOutput" style="margin-left: 32px;"></div>
+            </div>
+        </div>
+
+        <!-- STEP 4: Results -->
+        <div class="card">
+            <div class="section-title">Step 4: Verify Protection</div>
+            <p class="small">Test that both authentication methods still work for legitimate access.</p>
+
+            <div class="row">
+                <button class="btn-primary" id="btnGetProtectedInsecure">Access with localStorage Token</button>
+                <button class="btn-sec" id="btnGetProtectedSecure">Access with HttpOnly Cookie</button>
+            </div>
+            <div class="outputs small" id="protectedOutput"></div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card">
+            <div class="section-title">Experiment Summary</div>
+            <ul class="small">
+                <li><strong>Vulnerability:</strong> XSS attacks can steal tokens from localStorage/sessionStorage using
+                    <code>document.cookie</code> or <code>localStorage.getItem()</code>.
+                </li>
+                <li><strong>Protection:</strong> HttpOnly cookies cannot be accessed by JavaScript, preventing token
+                    theft via XSS.</li>
+                <li><strong>Best Practice:</strong> Store sensitive authentication tokens in HttpOnly cookies with
+                    Secure and SameSite flags.</li>
+                <li><strong>Tool Used:</strong> Browser DevTools (Application tab) to inspect storage and cookies.</li>
+            </ul>
+        </div>
+
+        <footer>Prepared for Advanced Computer Security – Safe, Local-Only Demonstration</footer>
+    </div>
+
+    <script>
+        const byId = id => document.getElementById(id);
+        const out = (id, txt, isHtml = false) => {
+            if (isHtml) byId(id).innerHTML = txt;
+            else byId(id).innerText = txt;
+        };
+
+        // Step 1: Login buttons
+        byId("btnLoginInsecure").onclick = async () => {
+            const res = await fetch("/api/login-insecure", { method: "POST" });
+            const j = await res.json();
+            out("loginOutput", "✓ Received token: " + j.token);
+            // Store it temporarily for demo
+            window.receivedToken = j.token;
+        };
+
+        byId("btnLoginSecure").onclick = async () => {
+            const res = await fetch("/api/login-secure", { method: "POST", credentials: "include" });
+            const j = await res.json();
+            out("loginOutput", "✓ " + j.message + " (Check DevTools → Application → Cookies)");
+        };
+
+        // Step 2: Store token
+        byId("btnStoreLocal").onclick = () => {
+            const token = window.receivedToken || "fake-jwt-token-LOCAL-abc123";
+            localStorage.setItem("token", token);
+            out("localOutput", "✓ Token stored in localStorage");
+        };
+
+        byId("btnGetLocal").onclick = () => {
+            const t = localStorage.getItem("token");
+            out("localOutput", t ? ("📦 localStorage token: " + t) : "❌ No token in localStorage");
+        };
+
+        // Step 3A: Attack localStorage
+        byId("btnAttackLocalStorage").onclick = () => {
+            // Simulate XSS attack reading localStorage
+            const stolenToken = localStorage.getItem("token");
+
+            if (stolenToken) {
+                const html = `
+                    <div class="attack-result">
+                        🚨 ATTACK SUCCESSFUL!<br>
+                        Stolen Token: ${stolenToken}<br><br>
+                        <span style="font-size: 12px;">An attacker injected JavaScript can steal this token and impersonate the user!</span>
+                    </div>
+                `;
+                out("attackLocalOutput", html, true);
+            } else {
+                out("attackLocalOutput", "⚠️ No token in localStorage to steal. Click 'Store Token' first.");
+            }
+        };
+
+        // Step 3B: Attack HttpOnly Cookie
+        byId("btnAttackCookie").onclick = () => {
+            // Attempt to read cookies (HttpOnly cookie won't appear)
+            const cookies = document.cookie;
+
+            const html = `
+                <div class="success-result">
+                    ✓ ATTACK FAILED (Good!)<br>
+                    document.cookie = "${cookies || '(empty)'}"<br><br>
+                    <span style="font-size: 12px;">HttpOnly cookie is NOT accessible to JavaScript! The token is protected from XSS attacks.</span>
+                </div>
+            `;
+            out("attackCookieOutput", html, true);
+        };
+
+        // Step 4: Verify both methods work
+        byId("btnGetProtectedInsecure").onclick = async () => {
+            const t = localStorage.getItem("token") || "";
+            const res = await fetch("/api/protected-insecure", {
+                headers: { Authorization: "Bearer " + t }
+            });
+            const txt = await res.text();
+            out("protectedOutput", `Response: ${txt}`);
+        };
+
+        byId("btnGetProtectedSecure").onclick = async () => {
+            const res = await fetch("/api/protected-secure", { credentials: "include" });
+            const txt = await res.text();
+            out("protectedOutput", `Response: ${txt}`);
+        };
+    </script>
+</body>
+
+</html>
