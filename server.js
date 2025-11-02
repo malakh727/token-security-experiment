@@ -52,19 +52,19 @@ app.get("/api/protected-secure", (req, res) => {
 });
 
 // ⚠️ VULNERABLE ENDPOINT - For educational demonstration only
-// This endpoint is intentionally vulnerable to XSS attacks
+// This endpoint is intentionally vulnerable to Reflected XSS
 app.get("/api/search", (req, res) => {
   const query = req.query.q || "";
   // INSECURE: Directly reflecting user input without sanitization
+  // This simulates the British Airways attack vector
   res.send(`
-    <html>
-    <head><title>Search Results</title></head>
-    <body>
-      <h2>Search Results for: ${query}</h2>
-      <p>No results found.</p>
-      <a href="/">Back to Home</a>
-    </body>
-    </html>
+    <div class="search-result">
+      <h3>Search Results for: ${query}</h3>
+      <p>No results found matching your query.</p>
+      <p style="font-size: 12px; color: #666;">
+        ⚠️ This endpoint is vulnerable to XSS because it reflects user input without sanitization.
+      </p>
+    </div>
   `);
 });
 

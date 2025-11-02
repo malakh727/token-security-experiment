@@ -76,12 +76,19 @@
         }
 
         input[type=text],
-        input[type=password] {
+        input[type=password],
+        textarea {
             padding: 10px;
             width: 100%;
-            max-width: 380px;
+            max-width: 520px;
             border-radius: 6px;
             border: 1px solid #e6eef8;
+            font-family: Arial, sans-serif;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
         }
 
         .row {
@@ -202,6 +209,43 @@
             margin-right: 8px;
             font-weight: bold;
         }
+
+        .search-result {
+            background: #f8f9fa;
+            padding: 16px;
+            margin: 12px 0;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .comment-box {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border: 1px solid #e6eef8;
+        }
+
+        .comment-header {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--accent);
+        }
+
+        .code-example {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 8px 0;
+            overflow-x: auto;
+        }
+
+        .malicious-code {
+            color: #ff6b6b;
+        }
     </style>
 </head>
 
@@ -210,8 +254,9 @@
         <header>
             <h1>🔒 Token Security Experiment</h1>
         </header>
-        <p class="desc">This experiment demonstrates <strong>XSS-based token theft</strong> and why <strong>HttpOnly
-                cookies</strong> provide better security than client-side storage (localStorage/sessionStorage).</p>
+        <p class="desc">This experiment demonstrates <strong>XSS-based token theft</strong> through realistic attack
+            vectors (search/comments) and why <strong>HttpOnly cookies</strong> provide better security than client-side
+            storage.</p>
 
         <!-- STEP 1: Setup -->
         <div class="card">
@@ -235,6 +280,112 @@
             </div>
         </div>
 
+        <!-- EDUCATIONAL: Understanding Cookies -->
+        <div class="card" style="background: #f0f7ff; border-left: 4px solid var(--accent);">
+            <div class="section-title" style="color: var(--accent);">📚 Understanding HTTP Cookies</div>
+            <p class="small"><strong>What is a Cookie?</strong> A small piece of data (max 4KB) that a server sends to a
+                browser, which the browser stores and sends back with future requests to that server.</p>
+
+            <div style="margin: 16px 0;">
+                <strong style="color: var(--accent-2);">How Cookies Work:</strong>
+                <div style="background: white; padding: 12px; border-radius: 6px; margin-top: 8px;">
+                    <pre style="margin: 0; background: transparent; padding: 0; font-size: 11px;">
+1. Client → Server:  "I want to login"
+2. Server → Client:  "OK, here's your auth cookie"
+   Header: Set-Cookie: auth_token=xyz; HttpOnly; Secure; SameSite=Strict
+3. Browser:          Stores cookie automatically
+4. Client → Server:  "Give me protected data" + Cookie: auth_token=xyz
+5. Server:           Verifies cookie, sends data back</pre>
+                </div>
+            </div>
+
+            <div style="margin: 16px 0;">
+                <strong style="color: var(--accent-2);">Cookie Security Attributes:</strong>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+                    <div style="background: white; padding: 10px; border-radius: 6px;">
+                        <div style="font-weight: 600; color: var(--accent);">🔒 HttpOnly</div>
+                        <div class="small">Prevents JavaScript from reading the cookie via document.cookie. Protects
+                            against XSS attacks.</div>
+                        <div class="small" style="margin-top: 4px; color: var(--accent-2);"><strong>Example:</strong>
+                            document.cookie returns empty</div>
+                    </div>
+                    <div style="background: white; padding: 10px; border-radius: 6px;">
+                        <div style="font-weight: 600; color: var(--accent);">🔐 Secure</div>
+                        <div class="small">Cookie only sent over HTTPS connections. Prevents network interception (MITM
+                            attacks).</div>
+                        <div class="small" style="margin-top: 4px; color: var(--accent-2);"><strong>Note:</strong> False
+                            in this demo (localhost), true in production</div>
+                    </div>
+                    <div style="background: white; padding: 10px; border-radius: 6px;">
+                        <div style="font-weight: 600; color: var(--accent);">🛡️ SameSite</div>
+                        <div class="small">Controls when cookies are sent with cross-site requests. Prevents CSRF
+                            attacks.</div>
+                        <div class="small" style="margin-top: 4px; color: var(--accent-2);"><strong>Options:</strong>
+                            Strict (best), Lax, None</div>
+                    </div>
+                    <div style="background: white; padding: 10px; border-radius: 6px;">
+                        <div style="font-weight: 600; color: var(--accent);">⏱️ Max-Age / Expires</div>
+                        <div class="small">Sets cookie expiration time. After expiry, browser deletes it automatically.
+                        </div>
+                        <div class="small" style="margin-top: 4px; color: var(--accent-2);"><strong>Example:</strong>
+                            Max-Age=3600 (1 hour)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin: 16px 0;">
+                <strong style="color: var(--accent-2);">Cookie vs localStorage:</strong>
+                <table style="width: 100%; margin-top: 8px; font-size: 12px;">
+                    <thead>
+                        <tr style="background: var(--accent); color: white;">
+                            <th style="padding: 8px; text-align: left;">Feature</th>
+                            <th style="padding: 8px; text-align: left;">localStorage</th>
+                            <th style="padding: 8px; text-align: left;">HttpOnly Cookie</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: white;">
+                            <td style="padding: 8px; font-weight: 600;">JavaScript Access</td>
+                            <td style="padding: 8px; color: var(--danger);">✅ Yes (Vulnerable)</td>
+                            <td style="padding: 8px; color: var(--accent-2);">❌ No (Protected)</td>
+                        </tr>
+                        <tr style="background: #f9f9f9;">
+                            <td style="padding: 8px; font-weight: 600;">Auto-sent with Requests</td>
+                            <td style="padding: 8px;">❌ No (manual)</td>
+                            <td style="padding: 8px;">✅ Yes (automatic)</td>
+                        </tr>
+                        <tr style="background: white;">
+                            <td style="padding: 8px; font-weight: 600;">XSS Protection</td>
+                            <td style="padding: 8px; color: var(--danger);">❌ None</td>
+                            <td style="padding: 8px; color: var(--accent-2);">✅ HttpOnly flag</td>
+                        </tr>
+                        <tr style="background: #f9f9f9;">
+                            <td style="padding: 8px; font-weight: 600;">Storage Limit</td>
+                            <td style="padding: 8px;">~5-10MB</td>
+                            <td style="padding: 8px;">~4KB per cookie</td>
+                        </tr>
+                        <tr style="background: white;">
+                            <td style="padding: 8px; font-weight: 600;">Expiration</td>
+                            <td style="padding: 8px;">Manual only</td>
+                            <td style="padding: 8px;">Automatic (Max-Age)</td>
+                        </tr>
+                        <tr style="background: #f9f9f9;">
+                            <td style="padding: 8px; font-weight: 600;">Best Use Case</td>
+                            <td style="padding: 8px;">Preferences, UI state</td>
+                            <td style="padding: 8px;">Authentication tokens</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div
+                style="background: #fff3cd; border-left: 3px solid #ffc107; padding: 10px; border-radius: 4px; margin-top: 12px;">
+                <strong>🎯 Key Takeaway:</strong> HttpOnly cookies are specifically designed to protect authentication
+                tokens from JavaScript-based attacks (XSS). They're invisible to document.cookie but automatically
+                included in HTTP requests by the browser.
+            </div>
+        </div>
+
         <!-- STEP 2: Store Tokens -->
         <div class="card">
             <div class="section-title">Step 2: Store Authentication Tokens</div>
@@ -252,41 +403,78 @@
             </div>
         </div>
 
-        <!-- STEP 3: THE ATTACK -->
+        <!-- STEP 3: THE ATTACK - SEARCH XSS -->
         <div class="card card-danger">
-            <div class="section-title section-title-danger">⚠️ Step 3: XSS Attack Simulation</div>
-            <p class="small">Now we'll simulate a Cross-Site Scripting (XSS) attack that attempts to steal the
-                authentication token.</p>
+            <div class="section-title section-title-danger">⚠️ Step 3A: XSS Attack via Search (Reflected XSS)</div>
+            <p class="small">Simulate a real-world attack where malicious JavaScript is injected through a search query.
+            </p>
 
             <div class="warning-box">
-                <strong>⚠️ Educational Purpose Only:</strong> This demonstrates a real vulnerability. Never perform
-                such attacks on systems you don't own.
+                <strong>⚠️ Educational Purpose Only:</strong> This demonstrates how British Airways-style attacks work.
+                Never perform such attacks on systems you don't own.
             </div>
 
-            <div class="step">
-                <span class="step-number">A</span>
-                <strong>Attack localStorage Token</strong>
-                <p class="small" style="margin: 8px 0 8px 32px;">Click the button below to inject malicious JavaScript
-                    that attempts to steal the token from localStorage.</p>
-                <button class="btn-danger" id="btnAttackLocalStorage" style="margin-left: 32px;">Execute XSS Attack on
-                    localStorage</button>
-                <div id="attackLocalOutput" style="margin-left: 32px;"></div>
+            <label for="searchInput">Search Query (Try the attack payload below)</label>
+            <input id="searchInput" type="text" placeholder="Enter search query...">
+            <button class="btn-primary" id="btnSearch" style="margin-top: 8px;">Search</button>
+
+            <div class="hint">
+                <strong>Normal Query:</strong> Try "laptop" or "phone"<br>
+                <strong>Attack Payload:</strong> Copy this malicious code:
+                <div class="code-example">
+                    <span class="malicious-code">&lt;img src=x onerror="let t=localStorage.getItem('token');alert('🚨
+                        TOKEN STOLEN: '+t)"&gt;</span>
+                </div>
             </div>
 
-            <div class="step">
-                <span class="step-number">B</span>
-                <strong>Attack HttpOnly Cookie</strong>
-                <p class="small" style="margin: 8px 0 8px 32px;">Now try to steal the HttpOnly cookie using the same
-                    technique.</p>
-                <button class="btn-danger" id="btnAttackCookie" style="margin-left: 32px;">Execute XSS Attack on
-                    HttpOnly Cookie</button>
-                <div id="attackCookieOutput" style="margin-left: 32px;"></div>
-            </div>
+            <div id="searchResults"></div>
         </div>
 
-        <!-- STEP 4: Results -->
+        <!-- STEP 3B: THE ATTACK - COMMENT XSS -->
+        <div class="card card-danger">
+            <div class="section-title section-title-danger">⚠️ Step 3B: XSS Attack via Comment (Stored XSS)</div>
+            <p class="small">Simulate an attack where malicious JavaScript is stored in a comment and executed when
+                others view it.</p>
+
+            <label for="commentInput">Post a Comment</label>
+            <textarea id="commentInput" placeholder="Write your comment..."></textarea>
+            <button class="btn-primary" id="btnPostComment" style="margin-top: 8px;">Post Comment</button>
+
+            <div class="hint">
+                <strong>Normal Comment:</strong> "Great article!"<br>
+                <strong>Attack Payload:</strong> Copy this malicious code:
+                <div class="code-example">
+                    <span class="malicious-code">&lt;img src=x onerror="let t=localStorage.getItem('token');alert('🚨
+                        COMMENT XSS - STOLEN: '+t)"&gt;</span>
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 20px;">Comments Section</div>
+            <div id="commentsDisplay"></div>
+        </div>
+
+        <!-- STEP 4: HttpOnly Cookie Protection -->
         <div class="card">
-            <div class="section-title">Step 4: Verify Protection</div>
+            <div class="section-title">Step 4: Compare HttpOnly Cookie Protection</div>
+            <p class="small">Now try to steal the HttpOnly cookie using the same XSS techniques.</p>
+
+            <label for="searchInputCookie">Search with HttpOnly Cookie Attack</label>
+            <input id="searchInputCookie" type="text" placeholder="Enter search query...">
+            <button class="btn-sec" id="btnSearchCookie" style="margin-top: 8px;">Search (HttpOnly Test)</button>
+
+            <div class="hint">
+                <strong>Attack Payload:</strong> Copy this:
+                <div class="code-example">
+                    <span class="malicious-code">&lt;img src=x onerror="alert('Cookie: '+document.cookie)"&gt;</span>
+                </div>
+            </div>
+
+            <div id="searchResultsCookie"></div>
+        </div>
+
+        <!-- STEP 5: Verify Legitimate Access -->
+        <div class="card">
+            <div class="section-title">Step 5: Verify Protection</div>
             <p class="small">Test that both authentication methods still work for legitimate access.</p>
 
             <div class="row">
@@ -300,14 +488,16 @@
         <div class="card">
             <div class="section-title">Experiment Summary</div>
             <ul class="small">
-                <li><strong>Vulnerability:</strong> XSS attacks can steal tokens from localStorage/sessionStorage using
-                    <code>document.cookie</code> or <code>localStorage.getItem()</code>.
-                </li>
-                <li><strong>Protection:</strong> HttpOnly cookies cannot be accessed by JavaScript, preventing token
-                    theft via XSS.</li>
-                <li><strong>Best Practice:</strong> Store sensitive authentication tokens in HttpOnly cookies with
-                    Secure and SameSite flags.</li>
-                <li><strong>Tool Used:</strong> Browser DevTools (Application tab) to inspect storage and cookies.</li>
+                <li><strong>Reflected XSS (Search):</strong> Malicious code in URL/query parameter executes immediately
+                    and steals localStorage tokens.</li>
+                <li><strong>Stored XSS (Comments):</strong> Malicious code stored in database executes for every user
+                    who views it.</li>
+                <li><strong>localStorage Vulnerability:</strong> Both attacks successfully steal tokens from
+                    localStorage.</li>
+                <li><strong>HttpOnly Protection:</strong> Same attacks fail to access HttpOnly cookies - JavaScript is
+                    blocked.</li>
+                <li><strong>Best Practice:</strong> Always store authentication tokens in HttpOnly cookies with Secure
+                    and SameSite flags.</li>
             </ul>
         </div>
 
@@ -326,7 +516,6 @@
             const res = await fetch("/api/login-insecure", { method: "POST" });
             const j = await res.json();
             out("loginOutput", "✓ Received token: " + j.token);
-            // Store it temporarily for demo
             window.receivedToken = j.token;
         };
 
@@ -348,41 +537,116 @@
             out("localOutput", t ? ("📦 localStorage token: " + t) : "❌ No token in localStorage");
         };
 
-        // Step 3A: Attack localStorage
-        byId("btnAttackLocalStorage").onclick = () => {
-            // Simulate XSS attack reading localStorage
-            const stolenToken = localStorage.getItem("token");
+        // Step 3A: Search XSS (Reflected)
+        byId("btnSearch").onclick = async () => {
+            const query = byId("searchInput").value;
 
-            if (stolenToken) {
-                const html = `
-                    <div class="attack-result">
-                        🚨 ATTACK SUCCESSFUL!<br>
-                        Stolen Token: ${stolenToken}<br><br>
-                        <span style="font-size: 12px;">An attacker injected JavaScript can steal this token and impersonate the user!</span>
-                    </div>
-                `;
-                out("attackLocalOutput", html, true);
-            } else {
-                out("attackLocalOutput", "⚠️ No token in localStorage to steal. Click 'Store Token' first.");
+            if (!query) {
+                out("searchResults", "<div class='hint'>Please enter a search query</div>", true);
+                return;
             }
+
+            // Send to vulnerable search endpoint
+            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            const html = await res.text();
+
+            // Display the response (which includes unsanitized input - XSS!)
+            out("searchResults", html, true);
         };
 
-        // Step 3B: Attack HttpOnly Cookie
-        byId("btnAttackCookie").onclick = () => {
-            // Attempt to read cookies (HttpOnly cookie won't appear)
-            const cookies = document.cookie;
+        // Step 3B: Comment XSS (Stored)
+        let comments = [];
 
-            const html = `
-                <div class="success-result">
-                    ✓ ATTACK FAILED (Good!)<br>
-                    document.cookie = "${cookies || '(empty)'}"<br><br>
-                    <span style="font-size: 12px;">HttpOnly cookie is NOT accessible to JavaScript! The token is protected from XSS attacks.</span>
+        byId("btnPostComment").onclick = () => {
+            const comment = byId("commentInput").value;
+
+            if (!comment) {
+                alert("Please enter a comment");
+                return;
+            }
+
+            // Store comment (unsanitized - vulnerable!)
+            comments.push({
+                user: "User" + (comments.length + 1),
+                text: comment,
+                time: new Date().toLocaleTimeString()
+            });
+
+            // Clear input
+            byId("commentInput").value = "";
+
+            // Display all comments (XSS executed here!)
+            displayComments();
+        };
+
+        function displayComments() {
+            const container = byId("commentsDisplay");
+
+            if (comments.length === 0) {
+                container.innerHTML = "<div class='hint'>No comments yet</div>";
+                return;
+            }
+
+            // Clear container
+            container.innerHTML = "";
+
+            // Create each comment as DOM element (allows script execution)
+            comments.forEach(c => {
+                const commentDiv = document.createElement('div');
+                commentDiv.className = 'comment-box';
+
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'comment-header';
+                headerDiv.textContent = `${c.user} • ${c.time}`;
+
+                const textDiv = document.createElement('div');
+                // VULNERABLE: Using innerHTML allows script execution
+                textDiv.innerHTML = c.text;
+
+                commentDiv.appendChild(headerDiv);
+                commentDiv.appendChild(textDiv);
+                container.appendChild(commentDiv);
+            });
+        }
+
+        // Step 4: HttpOnly Cookie XSS attempt
+        byId("btnSearchCookie").onclick = async () => {
+            const query = byId("searchInputCookie").value;
+
+            if (!query) {
+                out("searchResultsCookie", "<div class='hint'>Please enter a search query</div>", true);
+                return;
+            }
+
+            // Try to execute XSS to steal cookie
+            const result = `
+                <div class="search-result">
+                    <h3>Search Results for: ${query}</h3>
+                    <p>No results found.</p>
                 </div>
             `;
-            out("attackCookieOutput", html, true);
+
+            out("searchResultsCookie", result, true);
+
+            // Automatically check if attack worked
+            setTimeout(() => {
+                const cookies = document.cookie;
+                const hasAuthCookie = cookies.includes('auth_token');
+
+                const resultMsg = `
+                    <div class="success-result">
+                        ✓ HttpOnly Cookie Protection Test<br><br>
+                        document.cookie = "${cookies || '(empty)'}"<br><br>
+                        <strong>Result:</strong> ${hasAuthCookie ? 'Regular cookies visible, but HttpOnly flag prevents JavaScript access to auth_token' : 'HttpOnly cookie NOT accessible to JavaScript - Attack Failed! ✓'}<br><br>
+                        <span style="font-size: 12px;">Even though XSS executed, the HttpOnly cookie remains protected.</span>
+                    </div>
+                `;
+
+                out("searchResultsCookie", result + resultMsg, true);
+            }, 500);
         };
 
-        // Step 4: Verify both methods work
+        // Step 5: Verify both methods work
         byId("btnGetProtectedInsecure").onclick = async () => {
             const t = localStorage.getItem("token") || "";
             const res = await fetch("/api/protected-insecure", {
@@ -397,6 +661,9 @@
             const txt = await res.text();
             out("protectedOutput", `Response: ${txt}`);
         };
+
+        // Initialize empty comments display
+        displayComments();
     </script>
 </body>
 
